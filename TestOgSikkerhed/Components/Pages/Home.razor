@@ -1,0 +1,60 @@
+﻿@page "/"
+
+@using Microsoft.AspNetCore.Identity
+@using TestOgSikkerhed.Data
+
+@* @inject IServiceProvider ServiceProvider
+@inject UserManager<ApplicationUser> UserManager *@
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Home</PageTitle>
+
+<h1>Hello, world!</h1>
+
+<AuthorizeView>
+    <Authorized>
+        <div>
+            Welcome to your new app. You are logged in
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <div>
+            Welcome to your new app. You are NOT logged in
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+<AuthorizeView Roles="Admin">
+    <Authorized>
+        <p>
+            You are admin
+        </p>
+    </Authorized>
+</AuthorizeView>
+
+@code{
+    public bool _isAuthenticated;
+    public bool _isAdmin;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authenticationState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authenticationState.User;
+
+        _isAuthenticated = user.Identity.IsAuthenticated;
+        _isAdmin = user.IsInRole("Admin");
+        //await CreateUserRoles("test1@test", "Admin");
+    }
+
+    // public async Task CreateUserRoles(string user, string role)
+    // {
+    //     var roleManager = ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    //     var userManager = UserManager;
+
+    //     var userRoleCheck = await roleManager.RoleExistsAsync(role);
+    //     if (!userRoleCheck)
+    //         await roleManager.CreateAsync(new IdentityRole(role));
+
+    //     ApplicationUser identityUser = await userManager.FindByEmailAsync(user);
+    //     await userManager.AddToRoleAsync(identityUser, role);
+    // }
+}
