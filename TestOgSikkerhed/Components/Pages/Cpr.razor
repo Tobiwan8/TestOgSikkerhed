@@ -25,6 +25,7 @@
                 <InputText @bind-Value="cprInput.CprNumber" class="form-control" required />
                 <ValidationMessage For="@(() => cprInput.CprNumber)" />
             </div>
+            <br />
             <button type="submit" class="btn btn-primary">Submit</button>
         </EditForm>
     }
@@ -41,6 +42,7 @@
             {
                 <p class="text-danger">@verificationError</p>
             }
+            <br />
             <button type="submit" class="btn btn-success">Verify</button>
         </EditForm>
     }
@@ -59,10 +61,8 @@ else
     private CprInputModel cprInput = new();
     private VerificationInputModel verificationInput = new();
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await Task.Delay(1);
-
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
@@ -82,6 +82,7 @@ else
         }
 
         isLoading = false;
+        StateHasChanged();
     }
 
 

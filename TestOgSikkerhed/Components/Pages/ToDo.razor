@@ -1,8 +1,92 @@
-﻿@page "/todo"
+﻿@page "/ToDo"
 @attribute [Authorize]
 
-<h3>ToDo</h3>
+@using Microsoft.AspNetCore.Identity
+@using System.ComponentModel.DataAnnotations
+@using TestOgSikkerhed.Data
+
+@inject UserManager<ApplicationUser> UserManager
+@inject ToDoDbContext DbContext
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<h3>To-Do List</h3>
+
+<EditForm Model="newToDoItem" OnValidSubmit="AddToDo">
+    <DataAnnotationsValidator />
+    <div class="form-group">
+        <InputText @bind-Value="newToDoItem.ItemText" class="form-control" placeholder="Enter a new task..." />
+        <ValidationMessage For="@(() => newToDoItem.ItemText)" />
+    </div>
+    <button type="submit" class="btn btn-primary mt-2">Add</button>
+</EditForm>
+
+<hr />
+
+@if (toDoList.Any())
+{
+    <ul class="list-group">
+        @foreach (var todo in toDoList)
+        {
+            <li class="list-group-item">@todo.Item</li>
+        }
+    </ul>
+}
+else
+{
+    <p>No tasks yet. Add a new one above!</p>
+}
 
 @code {
+    private List<Data.ToDo> toDoList = new();
+    private ToDoInputModel newToDoItem = new();
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var appUser = await UserManager.GetUserAsync(user);
+            if (appUser != null)
+            {
+                int userId = DbContext.CprRecords.FirstOrDefault(c => c.User == appUser.UserName)?.Id ?? 0;
+                toDoList = DbContext.ToDoItems.Where(t => t.UserID == userId).ToList();
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task AddToDo()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var appUser = await UserManager.GetUserAsync(user);
+            if (appUser != null)
+            {
+                int userId = DbContext.CprRecords.FirstOrDefault(c => c.User == appUser.UserName)?.Id ?? 0;
+
+                if (userId > 0 && !string.IsNullOrWhiteSpace(newToDoItem.ItemText))
+                {
+                    Data.ToDo newTask = new() { UserID = userId, Item = newToDoItem.ItemText };
+                    DbContext.ToDoItems.Add(newTask);
+                    await DbContext.SaveChangesAsync();
+
+                    toDoList.Add(newTask); // Update the UI
+                    newToDoItem.ItemText = ""; // Clear input field
+                }
+            }
+        }
+    }
+
+    public class ToDoInputModel
+    {
+        [Required]
+        [StringLength(100, ErrorMessage = "Task must be between 1 and 100 characters.", MinimumLength = 1)]
+        public string ItemText { get; set; } = "";
+    }
 }
