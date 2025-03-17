@@ -1,0 +1,146 @@
+﻿@page "/Cpr"
+@attribute [Authorize]
+
+@using Microsoft.AspNetCore.Identity
+@using System.ComponentModel.DataAnnotations
+@using TestOgSikkerhed.Data
+
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject ToDoDbContext DbContext
+
+
+<h3>Validate CPR NR</h3>
+
+@if (!isLoading)
+{
+    <p>User: @userName</p>
+    if (userCpr == null)
+    {
+        <p>CPR number:</p>
+        <EditForm Model="cprInput" OnValidSubmit="SubmitCpr">
+            <DataAnnotationsValidator />
+            <div class="form-group">
+                <InputText @bind-Value="cprInput.CprNumber" class="form-control" required />
+                <ValidationMessage For="@(() => cprInput.CprNumber)" />
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </EditForm>
+    }
+    else
+    {
+        <p>CPR number:</p>
+        <EditForm Model="verificationInput" OnValidSubmit="VerifyCpr">
+            <DataAnnotationsValidator />
+            <div class="form-group">
+                <InputText @bind-Value="verificationInput.CprNumber" class="form-control" required />
+                <ValidationMessage For="@(() => verificationInput.CprNumber)" />
+            </div>
+            @if (!string.IsNullOrEmpty(verificationError))
+            {
+                <p class="text-danger">@verificationError</p>
+            }
+            <button type="submit" class="btn btn-success">Verify</button>
+        </EditForm>
+    }
+}
+else
+{
+    <p>Loading...</p>
+}
+
+@code {
+    private string? userCpr;
+    private string? userName;
+    private bool isLoading = true;
+    private string? verificationError;
+
+    private CprInputModel cprInput = new();
+    private VerificationInputModel verificationInput = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.Delay(1);
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var appUser = await UserManager.GetUserAsync(user);
+            if (appUser != null)
+            {
+                // Check if CPR is registered
+                var cprEntry = DbContext.CprRecords.FirstOrDefault(c => c.User == appUser.UserName);
+                if (cprEntry != null)
+                {
+                    userCpr = cprEntry.CprNumber;
+                    userName = appUser.UserName;
+                }
+            }
+        }
+
+        isLoading = false;
+    }
+
+
+
+    private async Task SubmitCpr()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var appUser = await UserManager.GetUserAsync(user);
+            if (appUser != null)
+            {
+                string sanitizedCpr = new string(cprInput.CprNumber.Where(char.IsDigit).ToArray());
+
+                if (sanitizedCpr.Length != 10)
+                {
+                    return;
+                }
+
+                // Save CPR to database
+                Data.Cpr newCpr = new() { User = appUser.UserName!, CprNumber = sanitizedCpr };
+                DbContext.CprRecords.Add(newCpr);
+                await DbContext.SaveChangesAsync();
+
+                // Reload page state
+                userCpr = sanitizedCpr;
+            }
+        }
+    }
+
+    private void VerifyCpr()
+    {
+        string sanitizedInput = new string(verificationInput.CprNumber.Where(char.IsDigit).ToArray());
+
+        if (sanitizedInput == userCpr)
+        {
+            verificationError = null;
+            NavigationManager.NavigateTo("/todo", forceLoad: true);
+        }
+        else
+        {
+            verificationError = "Incorrect CPR number. Please try again.";
+            verificationInput.CprNumber = "";
+        }
+    }
+
+    public class CprInputModel
+    {
+        [Required]
+        [RegularExpression(@"^\d{6}-?\d{4}$", ErrorMessage = "CPR must be in format XXXXXX-XXXX or XXXXXXXXXX.")]
+        public string CprNumber { get; set; } = "";
+    }
+
+    public class VerificationInputModel
+    {
+        [Required]
+        [RegularExpression(@"^\d{6}-?\d{4}$", ErrorMessage = "CPR must be in format XXXXXX-XXXX or XXXXXXXXXX.")]
+        public string CprNumber { get; set; } = "";
+    }
+}

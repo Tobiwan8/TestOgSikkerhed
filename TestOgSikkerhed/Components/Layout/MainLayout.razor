@@ -1,13 +1,40 @@
-﻿@inherits LayoutComponentBase
+﻿@using Microsoft.AspNetCore.Identity
+@using TestOgSikkerhed.Data
+@inherits LayoutComponentBase
+
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+    @* <AuthorizeView>
+        <div class="sidebar">
+            <NavMenu />
+        </div>
+    </AuthorizeView> *@
 
     <main>
         <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <AuthorizeView>
+                <Authorized>
+                    @if (userName != null)
+                    {
+                        <NavLink href="/ToDo">@userName</NavLink>
+                        <form action="Account/Logout" method="post" class="d-inline">
+                            <AntiforgeryToken />
+                            <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                            <button type="submit" class="btn btn-link text-decoration-none">
+                                Logout
+                            </button>
+                        </form>
+                    }
+                </Authorized>
+                <NotAuthorized>
+                    <NavLink href="/Account/Register" >Register</NavLink>
+                    <NavLink href="/Account/Login" >Login</NavLink>
+                </NotAuthorized>
+            </AuthorizeView>
         </div>
 
         <article class="content px-4">
@@ -21,3 +48,35 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private string? userName;
+    private string? currentUrl;
+
+    protected override async Task OnInitializedAsync()
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var appUser = await UserManager.GetUserAsync(user);
+            if (appUser != null)
+            {
+                var roles = await UserManager.GetRolesAsync(appUser);
+                var role = roles.FirstOrDefault();
+
+                userName = string.IsNullOrEmpty(role) ? appUser.UserName : $"{appUser.UserName} ({role})";
+            }
+        }
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        StateHasChanged();
+    }
+}

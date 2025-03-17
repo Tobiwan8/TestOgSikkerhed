@@ -1,10 +1,12 @@
 ﻿@page "/"
+@attribute [Authorize]
 
 @using Microsoft.AspNetCore.Identity
 @using TestOgSikkerhed.Data
 
 @* @inject IServiceProvider ServiceProvider
 @inject UserManager<ApplicationUser> UserManager *@
+@inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Home</PageTitle>
@@ -42,6 +44,7 @@
 
         _isAuthenticated = user.Identity.IsAuthenticated;
         _isAdmin = user.IsInRole("Admin");
+
         //await CreateUserRoles("test1@test", "Admin");
     }
 

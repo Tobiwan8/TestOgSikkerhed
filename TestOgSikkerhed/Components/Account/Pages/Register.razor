@@ -9,11 +9,14 @@
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IUserStore<ApplicationUser> UserStore
+@inject RoleManager<IdentityRole> RoleManager
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IEmailSender<ApplicationUser> EmailSender
 @inject ILogger<Register> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
+@inject IServiceProvider ServiceProvider
+@inject UserManager<ApplicationUser> UserManager
 
 <PageTitle>Register</PageTitle>
 
@@ -42,15 +45,16 @@
                 <label for="Input.ConfirmPassword">Confirm Password</label>
                 <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
             </div>
+            <div class="form-floating mb-3">
+                <InputSelect @bind-Value="Input.Role" class="form-control">
+                    <option value="">-- Select Role --</option>
+                    <option value="Admin">Admin</option>
+                </InputSelect>
+                <label for="Input.Role">Role</label>
+                <ValidationMessage For="() => Input.Role" class="text-danger" />
+            </div>
             <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
         </EditForm>
-    </div>
-    <div class="col-lg-4 col-lg-offset-2">
-        <section>
-            <h3>Use another service to register.</h3>
-            <hr />
-            <ExternalLoginPicker />
-        </section>
     </div>
 </div>
 
@@ -82,6 +86,11 @@
         }
 
         Logger.LogInformation("User created a new account with password.");
+
+        if (!string.IsNullOrEmpty(Input.Role))
+        {
+            await CreateUserRoles(Input.Email, Input.Role);
+        }
 
         var userId = await UserManager.GetUserIdAsync(user);
         var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
@@ -144,5 +153,20 @@
         [Display(Name = "Confirm password")]
         [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; } = "";
+
+        public string Role { get; set; } = "";
+    }
+
+    public async Task CreateUserRoles(string user, string role)
+    {
+        var roleManager = ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        var userManager = UserManager;
+
+        var userRoleCheck = await roleManager.RoleExistsAsync(role);
+        if (!userRoleCheck)
+            await roleManager.CreateAsync(new IdentityRole(role));
+
+        ApplicationUser? identityUser = await userManager.FindByEmailAsync(user);
+        await userManager.AddToRoleAsync(identityUser!, role);
     }
 }

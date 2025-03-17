@@ -23,7 +23,8 @@ builder.Services.AddAuthentication(options =>
     })
     .AddIdentityCookies();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+var connectionString = builder.Configuration.GetConnectionString("IdentityConnection") 
+    ?? throw new InvalidOperationException("Connection string 'IdentityConnection' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -43,6 +44,12 @@ builder.Services.AddAuthorization(options =>
         policy.RequireRole("Admin");
     });
 });
+
+var todoConnectionString = builder.Configuration.GetConnectionString("ToDoDBConnection")
+    ?? throw new InvalidOperationException("ToDoDBConnection connection string not found.");
+
+builder.Services.AddDbContext<ToDoDbContext>(options =>
+    options.UseSqlServer(todoConnectionString));
 
 var app = builder.Build();
 

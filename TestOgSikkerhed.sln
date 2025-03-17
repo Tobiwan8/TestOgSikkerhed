@@ -5,8 +5,6 @@ VisualStudioVersion = 17.12.35707.178
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestOgSikkerhed", "TestOgSikkerhed\TestOgSikkerhed.csproj", "{355AD172-27F8-4FA6-B95E-E4E9BC495E1A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestOgSikkerhedTest", "TestOgSikkerhedTest\TestOgSikkerhedTest.csproj", "{34590AB7-F9F8-4FAA-854E-4975BDEB0EE1}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,10 +15,6 @@ Global
 		{355AD172-27F8-4FA6-B95E-E4E9BC495E1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{355AD172-27F8-4FA6-B95E-E4E9BC495E1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{355AD172-27F8-4FA6-B95E-E4E9BC495E1A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{34590AB7-F9F8-4FAA-854E-4975BDEB0EE1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{34590AB7-F9F8-4FAA-854E-4975BDEB0EE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{34590AB7-F9F8-4FAA-854E-4975BDEB0EE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{34590AB7-F9F8-4FAA-854E-4975BDEB0EE1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
