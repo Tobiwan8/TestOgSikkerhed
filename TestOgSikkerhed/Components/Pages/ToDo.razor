@@ -40,8 +40,9 @@ else
     private List<Data.ToDo> toDoList = new();
     private ToDoInputModel newToDoItem = new();
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
+        await Task.Delay(5);
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
@@ -54,8 +55,6 @@ else
                 toDoList = DbContext.ToDoItems.Where(t => t.UserID == userId).ToList();
             }
         }
-
-        StateHasChanged();
     }
 
     private async Task AddToDo()

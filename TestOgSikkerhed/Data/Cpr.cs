@@ -13,6 +13,9 @@ namespace TestOgSikkerhed.Data
         [Required]
         public string CprNumber { get; set; } = string.Empty;
 
+        [Required]
+        public string Salt { get; set; } = string.Empty;
+
         public ICollection<ToDo> ToDoItems { get; set; } = new List<ToDo>();
     }
 }

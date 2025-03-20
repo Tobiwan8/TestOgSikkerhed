@@ -10,6 +10,8 @@
 @inject UserManager<ApplicationUser> UserManager
 @inject ToDoDbContext DbContext
 
+@inject HashingUtility HashingUtility
+
 
 <h3>Validate CPR NR</h3>
 
@@ -54,6 +56,8 @@ else
 
 @code {
     private string? userCpr;
+
+    private string? userSalt;
     private string? userName;
     private bool isLoading = true;
     private string? verificationError;
@@ -61,8 +65,9 @@ else
     private CprInputModel cprInput = new();
     private VerificationInputModel verificationInput = new();
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
+        await Task.Delay(1);
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
@@ -76,13 +81,13 @@ else
                 if (cprEntry != null)
                 {
                     userCpr = cprEntry.CprNumber;
+                    userSalt = cprEntry.Salt;
                     userName = appUser.UserName;
                 }
             }
         }
 
         isLoading = false;
-        StateHasChanged();
     }
 
 
@@ -104,13 +109,27 @@ else
                     return;
                 }
 
-                // Save CPR to database
-                Data.Cpr newCpr = new() { User = appUser.UserName!, CprNumber = sanitizedCpr };
+                // Generer salt og hash CPR
+                byte[] salt = HashingUtility.GenerateSalt();
+                string hashedCpr = HashingUtility.ComputePBKDF2(sanitizedCpr, salt);
+                string saltBase64 = Convert.ToBase64String(salt);
+
+                // Gem i databasen
+                Data.Cpr newCpr = new() { User = appUser.UserName!, CprNumber = hashedCpr, Salt = saltBase64 };
                 DbContext.CprRecords.Add(newCpr);
                 await DbContext.SaveChangesAsync();
 
-                // Reload page state
-                userCpr = sanitizedCpr;
+                userCpr = hashedCpr;
+                userSalt = saltBase64;
+
+                // // Save CPR to database
+                // Data.Cpr newCpr = new() { User = appUser.UserName!, CprNumber = sanitizedCpr };
+                // DbContext.CprRecords.Add(newCpr);
+                // await DbContext.SaveChangesAsync();
+
+                // // Reload page state
+                // userCpr = sanitizedCpr;
+
             }
         }
     }
@@ -119,14 +138,25 @@ else
     {
         string sanitizedInput = new string(verificationInput.CprNumber.Where(char.IsDigit).ToArray());
 
-        if (sanitizedInput == userCpr)
+        if (!string.IsNullOrEmpty(userCpr) && !string.IsNullOrEmpty(userSalt))
         {
-            verificationError = null;
-            NavigationManager.NavigateTo("/todo", forceLoad: true);
+            byte[] saltBytes = Convert.FromBase64String(userSalt);
+            string hashedInput = HashingUtility.ComputePBKDF2(sanitizedInput, saltBytes);
+
+            if (hashedInput == userCpr)
+            {
+                verificationError = null;
+                NavigationManager.NavigateTo("/todo", forceLoad: true);
+            }
+            else
+            {
+                verificationError = "Incorrect CPR number. Please try again.";
+                verificationInput.CprNumber = "";
+            }
         }
         else
         {
-            verificationError = "Incorrect CPR number. Please try again.";
+            verificationError = "Salt";
             verificationInput.CprNumber = "";
         }
     }
