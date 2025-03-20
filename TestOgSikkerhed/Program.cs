@@ -20,8 +20,7 @@ builder.Services.AddAuthentication(options =>
     {
         options.DefaultScheme = IdentityConstants.ApplicationScheme;
         options.DefaultSignInScheme = IdentityConstants.ExternalScheme;
-    })
-    .AddIdentityCookies();
+    }).AddIdentityCookies();
 
 var connectionString = builder.Configuration.GetConnectionString("IdentityConnection") 
     ?? throw new InvalidOperationException("Connection string 'IdentityConnection' not found.");
@@ -51,6 +50,38 @@ var todoConnectionString = builder.Configuration.GetConnectionString("ToDoDBConn
 builder.Services.AddDbContext<ToDoDbContext>(options =>
     options.UseSqlServer(todoConnectionString));
 
+string userFolder = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+userFolder = Path.Combine(userFolder, ".aspnet");
+userFolder = Path.Combine(userFolder, "https");
+userFolder = Path.Combine(userFolder, "BlazorCertificate.pfx");
+builder.Configuration.GetSection("Kestrel:EndPoints:Https:Certificate:Path").Value = userFolder;
+
+string kestrelPassword = builder.Configuration.GetValue<string>("KestrelPassword");
+builder.Configuration.GetSection("Kestrel:Endpoints:Https:Certificate:Password").Value = kestrelPassword;
+
+builder.WebHost.UseKestrel((context, serverOptions) =>
+{
+    serverOptions.Configure(context.Configuration.GetSection("Kestrel"))
+        .Endpoint("HTTPS", listenOptions =>
+        {
+            listenOptions.HttpsOptions.SslProtocols = System.Security.Authentication.SslProtocols.Tls12;
+        });
+});
+
+//if (builder.Environment.IsDevelopment())
+//{
+//    builder.Configuration.AddUserSecrets<Program>();
+//}
+
+//builder.WebHost.ConfigureKestrel(options =>
+//{
+//    options.ConfigureHttpsDefaults(httpsOptions =>
+//    {
+//        // Automatically binds to the certificate configuration
+//        httpsOptions.SslProtocols = System.Security.Authentication.SslProtocols.Tls12;
+//    });
+//});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -66,7 +97,6 @@ else
 }
 
 app.UseHttpsRedirection();
-
 
 app.UseAntiforgery();
 
