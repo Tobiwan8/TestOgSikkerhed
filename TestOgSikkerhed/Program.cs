@@ -17,6 +17,22 @@ builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 builder.Services.AddScoped<HashingUtility>();
+builder.Services.AddSingleton<SymmetricEncryptionUtility>();
+builder.Services.AddSingleton<AsymmetricEncryptionUtility>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowBlazor",
+        policy => policy.AllowAnyOrigin()
+                        .AllowAnyMethod()
+                        .AllowAnyHeader());
+});
+
+builder.Services.AddHttpClient("TestOgSikkerhed.EncryptionAPI", client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7231/api/encryption/");
+});
+
 
 builder.Services.AddAuthentication(options =>
     {
@@ -85,6 +101,8 @@ builder.WebHost.UseKestrel((context, serverOptions) =>
 //});
 
 var app = builder.Build();
+
+app.UseCors("AllowBlazor");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

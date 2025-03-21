@@ -5,6 +5,8 @@ VisualStudioVersion = 17.12.35707.178
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestOgSikkerhed", "TestOgSikkerhed\TestOgSikkerhed.csproj", "{355AD172-27F8-4FA6-B95E-E4E9BC495E1A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestOgSikkerhed.EncryptionAPI", "TestOgSikkerhed.EncryptionAPI\TestOgSikkerhed.EncryptionAPI.csproj", "{DC57E500-907C-475D-A7EB-D203D8271E6F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{355AD172-27F8-4FA6-B95E-E4E9BC495E1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{355AD172-27F8-4FA6-B95E-E4E9BC495E1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{355AD172-27F8-4FA6-B95E-E4E9BC495E1A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC57E500-907C-475D-A7EB-D203D8271E6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC57E500-907C-475D-A7EB-D203D8271E6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC57E500-907C-475D-A7EB-D203D8271E6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC57E500-907C-475D-A7EB-D203D8271E6F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

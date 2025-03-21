@@ -1,0 +1,6 @@
+@TestOgSikkerhed.EncryptionAPI_HostAddress = http://localhost:5003
+
+GET {{TestOgSikkerhed.EncryptionAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

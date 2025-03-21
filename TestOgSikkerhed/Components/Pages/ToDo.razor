@@ -3,11 +3,16 @@
 
 @using Microsoft.AspNetCore.Identity
 @using System.ComponentModel.DataAnnotations
+@using System.Security.Cryptography
+@using System.Text
 @using TestOgSikkerhed.Data
 
 @inject UserManager<ApplicationUser> UserManager
 @inject ToDoDbContext DbContext
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IHttpClientFactory HttpClientFactory
+@inject HashingUtility HashingUtility
+
 
 <h3>To-Do List</h3>
 
@@ -27,7 +32,7 @@
     <ul class="list-group">
         @foreach (var todo in toDoList)
         {
-            <li class="list-group-item">@todo.Item</li>
+            <li class="list-group-item">@DecryptText(todo.Item)</li>
         }
     </ul>
 }
@@ -55,6 +60,38 @@ else
                 toDoList = DbContext.ToDoItems.Where(t => t.UserID == userId).ToList();
             }
         }
+
+        // if (user.Identity?.IsAuthenticated == true)
+        // {
+        //     var appUser = await UserManager.GetUserAsync(user);
+        //     if (appUser != null)
+        //     {
+        //         int userId = DbContext.CprRecords.FirstOrDefault(c => c.User == appUser.UserName)?.Id ?? 0;
+
+        //         if (userId > 0)
+        //         {
+        //             var client = HttpClientFactory.CreateClient("TestOgSikkerhed.EncryptionAPI");
+        //             var privateKeyResponse = Backend.KeyManager.GetPrivateKey();
+
+        //             toDoList = DbContext.ToDoItems.Where(t => t.UserID == userId).ToList();
+
+        //             foreach (var item in toDoList)
+        //             {
+        //                 var decryptionRequest = new
+        //                 {
+        //                     PrivateKey = privateKeyResponse,
+        //                     EncryptedText = item.Item
+        //                 };
+
+        //                 var response = await client.PostAsJsonAsync("decrypt", decryptionRequest);
+        //                 if (response.IsSuccessStatusCode)
+        //                 {
+        //                     item.Item = await response.Content.ReadAsStringAsync();
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     private async Task AddToDo()
@@ -71,14 +108,66 @@ else
 
                 if (userId > 0 && !string.IsNullOrWhiteSpace(newToDoItem.ItemText))
                 {
-                    Data.ToDo newTask = new() { UserID = userId, Item = newToDoItem.ItemText };
-                    DbContext.ToDoItems.Add(newTask);
-                    await DbContext.SaveChangesAsync();
+                    // Hent PublicKey fra API
+                    var client = HttpClientFactory.CreateClient("TestOgSikkerhed.EncryptionAPI");
+                    var publicKeyResponse = await client.GetStringAsync("getPublicKey");
 
-                    toDoList.Add(newTask); // Update the UI
-                    newToDoItem.ItemText = ""; // Clear input field
+                    if (!string.IsNullOrEmpty(publicKeyResponse))
+                    {
+                        var encryptionRequest = new
+                        {
+                            PublicKey = publicKeyResponse,
+                            PlainText = newToDoItem.ItemText
+                        };
+
+                        // Send tekst til API for kryptering
+                        var response = await client.PostAsJsonAsync("encrypt", encryptionRequest);
+                        if (response.IsSuccessStatusCode)
+                        {
+                            string encryptedText = await response.Content.ReadAsStringAsync();
+
+                            Data.ToDo newToDoTask = new()
+                                {
+                                    UserID = userId,
+                                    Item = encryptedText
+                                };
+
+                            DbContext.ToDoItems.Add(newToDoTask);
+                            await DbContext.SaveChangesAsync();
+
+                            toDoList.Add(newToDoTask);
+                            newToDoItem.ItemText = ""; // Ryd inputfeltet
+                        }
+                    }
+
+                    // Data.ToDo newTask = new() { UserID = userId, Item = newToDoItem.ItemText };
+                    // DbContext.ToDoItems.Add(newTask);
+                    // await DbContext.SaveChangesAsync();
+
+                    // toDoList.Add(newTask); // Update the UI
+                    // newToDoItem.ItemText = ""; // Clear input field
                 }
             }
+        }
+    }
+
+    private string DecryptText(string encryptedText)
+    {
+        try
+        {
+            string privateKey = KeyManager.GetPrivateKey(); // Hent private key fra fil
+            using RSA rsa = RSA.Create();
+            rsa.ImportPkcs8PrivateKey(Convert.FromBase64String(privateKey), out _);
+
+            byte[] encryptedBytes = Convert.FromBase64String(encryptedText);
+            byte[] decryptedBytes = rsa.Decrypt(encryptedBytes, RSAEncryptionPadding.OaepSHA256);
+
+            return Encoding.UTF8.GetString(decryptedBytes);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Fejl ved dekryptering: {ex.Message}");
+            return "Fejl";
         }
     }
 
